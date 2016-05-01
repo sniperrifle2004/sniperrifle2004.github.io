@@ -1,0 +1,48 @@
+pkgname=vba-rerecording
+pkgver=24.4.0
+pkgrel=1
+pkgdesc='Re-recording version of VisualBoyAdvance with lua scripting'
+arch=('i686' 'x86_64')
+url='https://github.com/vba-rerecording/vba-rerecording'
+license=('GPL')
+depends=(
+		'lua51'
+		'sdl'
+		'libpng'
+	)
+optdepends=()
+makedepends=(
+		'bison'
+		'flex'
+		'cmake>=2.8.4'
+	)
+backup=(
+		'etc/vba-rr.cfg'
+	)
+source=("https://github.com/${pkgname}/${pkgname}/archive/${pkgver}.tar.gz")
+sha256sums=('68a489168e68310fab6177a5221e0d519e3611c762d3920360b93e164087498d')
+function build() {
+	cd ${pkgname}-${pkgver}
+	mkdir -p build
+	cd build
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+	# Patch LUA_INCLUDE_DIR to the proper location (Hopefully this exact match will
+	# result in a noop once the cmake Lua51 macro is patched
+	sed -i.org -e 's%^\(LUA_INCLUDE_DIR:PATH=/usr/include\)$%\1/lua5.1%' CMakeCache.txt
+	# Acually compile the package
+	make
+}
+function package() {
+	# Use arch linux convention of installing all binaries in
+	# /usr/bin
+	mkdir -p ${pkgdir}/usr/bin
+	cp ${pkgname}-${pkgver}/build/vba-rr ${pkgdir}/usr/bin
+	# We must install this global config file in /etc
+	# since the binary will look for it there
+	#
+	# Manually install this since the make install
+	# of CMake (unfortunately) has to have access
+	# to /etc
+	mkdir ${pkgdir}/etc
+	cp ${pkgname}-${pkgver}/src/vba-rr.cfg ${pkgdir}/etc
+}
